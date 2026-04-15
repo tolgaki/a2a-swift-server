@@ -5,7 +5,7 @@
 // call into. Owns the handler, stores, auth, and task registry.
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Transport-agnostic dispatcher: turns parsed A2A request parameters
 /// into handler or store invocations. Both the REST dispatcher and the

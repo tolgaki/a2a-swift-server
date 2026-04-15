@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Persistence abstraction for push-notification webhook configurations.
 ///

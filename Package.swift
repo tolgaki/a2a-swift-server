@@ -7,23 +7,19 @@ let package = Package(
     name: "a2a-swift-server",
     platforms: [
         .macOS(.v14),
-        .iOS(.v17),
-        .tvOS(.v17),
-        .watchOS(.v10),
-        .visionOS(.v1),
     ],
     products: [
         .library(name: "A2AServer", targets: ["A2AServer"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/tolgaki/a2a-swift.git", from: "1.2.0"),
+        .package(url: "https://github.com/tolgaki/a2a-client-swift.git", from: "1.0.22"),
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.5.0"),
     ],
     targets: [
         .target(
             name: "A2AServer",
             dependencies: [
-                .product(name: "A2ACore", package: "a2a-swift"),
+                .product(name: "A2AClient", package: "a2a-client-swift"),
                 .product(name: "Hummingbird", package: "hummingbird"),
             ],
             path: "Sources/A2AServer"
@@ -32,8 +28,7 @@ let package = Package(
             name: "A2AInteropTests",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2ACore", package: "a2a-swift"),
-                .product(name: "A2AClient", package: "a2a-swift"),
+                .product(name: "A2AClient", package: "a2a-client-swift"),
             ],
             path: "Tests/A2AInteropTests"
         ),
@@ -59,7 +54,7 @@ let package = Package(
             name: "PushNotificationsAgent",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2AClient", package: "a2a-swift"),
+                .product(name: "A2AClient", package: "a2a-client-swift"),
             ],
             path: "Examples/PushNotificationsAgent"
         ),
@@ -67,7 +62,7 @@ let package = Package(
             name: "MultiAgent",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2AClient", package: "a2a-swift"),
+                .product(name: "A2AClient", package: "a2a-client-swift"),
             ],
             path: "Examples/MultiAgent"
         ),

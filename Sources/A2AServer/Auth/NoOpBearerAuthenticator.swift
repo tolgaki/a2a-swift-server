@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Accepts any non-empty `Authorization: Bearer <token>` header and passes
 /// the raw token through in `AuthContext.credential`. Does **not** verify

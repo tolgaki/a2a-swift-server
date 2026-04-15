@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Delivers task update events to registered push-notification webhooks.
 ///

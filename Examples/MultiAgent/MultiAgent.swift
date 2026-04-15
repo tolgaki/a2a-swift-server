@@ -9,7 +9,7 @@
 // real multi-agent systems often run both sides.
 
 import Foundation
-import A2ACore
+import A2AClient
 import A2AClient
 import A2AServer
 

@@ -19,7 +19,7 @@
 //          -d '{"message":{"messageId":"1","role":"ROLE_USER","parts":[{"text":"hi"}]}}'
 
 import Foundation
-import A2ACore
+import A2AClient
 import A2AServer
 
 struct EchoHandler: A2AHandler {

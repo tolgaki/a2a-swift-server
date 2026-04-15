@@ -16,7 +16,7 @@
 //          -d '{"message":{"messageId":"1","role":"ROLE_USER","parts":[{"text":"tell me a story"}]}}'
 
 import Foundation
-import A2ACore
+import A2AClient
 import A2AServer
 
 struct StoryHandler: A2AHandler {

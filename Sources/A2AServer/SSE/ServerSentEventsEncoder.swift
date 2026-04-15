@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Encodes `StreamResponse` frames into Server-Sent Events wire format.
 ///

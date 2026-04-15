@@ -11,7 +11,7 @@
 
 import Foundation
 import Hummingbird
-import A2ACore
+import A2AClient
 
 extension A2ADispatcher {
     /// Register all A2A routes on a Hummingbird router.

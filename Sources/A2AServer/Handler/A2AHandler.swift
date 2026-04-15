@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// The public protocol users implement to back an A2A server.
 ///

@@ -4,7 +4,7 @@
 // Minimal test handler used by the in-process server harness.
 
 import Foundation
-import A2ACore
+import A2AClient
 import A2AServer
 
 struct EchoHandler: A2AHandler {

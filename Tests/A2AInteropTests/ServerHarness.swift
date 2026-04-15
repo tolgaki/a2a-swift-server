@@ -7,7 +7,7 @@
 
 import Foundation
 import Hummingbird
-import A2ACore
+import A2AClient
 import A2AServer
 
 actor ServerHarness {

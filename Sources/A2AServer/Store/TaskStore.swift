@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Persistence abstraction for A2A tasks. The server uses this to fulfil
 /// `getTask`, `listTasks`, `cancelTask`, and `subscribeToTask` without

@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// In-memory, actor-isolated `WebhookStore`.
 public actor InMemoryWebhookStore: WebhookStore {

@@ -4,7 +4,7 @@
 // Internal JSON-RPC 2.0 envelope types for the server dispatcher.
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// JSON-RPC 2.0 request envelope with decoded method/params.
 struct JSONRPCRequestEnvelope<Params: Decodable>: Decodable {

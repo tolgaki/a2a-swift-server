@@ -6,7 +6,7 @@
 
 import XCTest
 import Foundation
-import A2ACore
+import A2AClient
 import A2AClient
 import A2AServer
 

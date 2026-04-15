@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Identity and credentials extracted from an inbound request by an
 /// `Authenticator`. Passed through to the handler so it can make

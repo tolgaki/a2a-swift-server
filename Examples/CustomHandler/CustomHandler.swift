@@ -9,7 +9,7 @@
 // • Handling the "please create a task" path separately from immediate replies.
 
 import Foundation
-import A2ACore
+import A2AClient
 import A2AServer
 
 struct WeatherHandler: A2AHandler {

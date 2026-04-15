@@ -6,7 +6,7 @@
 
 import Foundation
 import Hummingbird
-import A2ACore
+@_exported import A2AClient
 
 /// Runs an A2A Protocol v1.0 server on top of Hummingbird.
 ///

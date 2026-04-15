@@ -5,15 +5,15 @@
 
 Server runtime for the **[Agent2Agent (A2A) Protocol v1.0](https://a2a-protocol.org/latest/)**, built on [Hummingbird 2](https://github.com/hummingbird-project/hummingbird).
 
-This package provides `A2AServer` — a batteries-included server you plug an `A2AHandler` into. It depends on [`a2a-swift`](https://github.com/tolgaki/a2a-swift) for wire types (`A2ACore`) and exposes the `A2AServer` product.
+This package provides `A2AServer` — a batteries-included server you plug an `A2AHandler` into. It depends on [`a2a-client-swift`](https://github.com/tolgaki/a2a-client-swift) for wire types and exposes the `A2AServer` product.
 
-> **Why a separate repo?** The client-side `a2a-swift` package intentionally has **no** dependencies so that iOS/macOS apps importing `A2AClient` don't pull Hummingbird + SwiftNIO + ~20 transitive packages they never use. If you need both client and server in one project, add both packages.
+> **Why a separate repo?** The client-side `a2a-client-swift` package intentionally has **no** dependencies so that iOS/macOS apps importing `A2AClient` don't pull Hummingbird + SwiftNIO + ~20 transitive packages they never use. If you need both client and server in one project, add both packages.
 
 ## Installation
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/tolgaki/a2a-swift-server.git", from: "1.1.0"),
+    .package(url: "https://github.com/tolgaki/a2a-swift-server.git", from: "1.2.0"),
 ],
 targets: [
     .target(
@@ -25,13 +25,12 @@ targets: [
 ]
 ```
 
-`A2AServer` transitively exports `A2ACore` (wire types) so you don't need to import it separately.
+`A2AServer` transitively re-exports `A2AClient` (wire types and the client if you want it) so you don't need to import it separately.
 
 ## Quickstart
 
 ```swift
-import A2ACore
-import A2AServer
+import A2AServer   // gives you A2AClient's wire types transitively
 
 struct EchoHandler: A2AHandler {
     func handleMessage(_ message: Message, auth: AuthContext?) async throws -> SendMessageResponse {
@@ -81,6 +80,10 @@ The server automatically exposes:
 | Task cancellation | `TaskRegistry` tracking in-flight Swift Tasks for real cancellation |
 | Push notifications | `WebhookDispatcher` with exponential backoff (500ms → 30s × 3) |
 | Auth | `Authenticator` protocol + `NoOpBearerAuthenticator` + `APIKeyAuthenticator`; zero third-party auth deps |
+
+## Deployment target
+
+`A2AServer` requires **macOS 14** (Hummingbird 2's floor). The client-side package `a2a-client-swift` stays at macOS 12 / iOS 15 for consumers who only need the client.
 
 ## Examples
 

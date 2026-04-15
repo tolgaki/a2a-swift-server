@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Validates an API key from an HTTP header (default `X-API-Key`) against
 /// either a static allowlist or a caller-supplied validation closure.

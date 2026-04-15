@@ -7,7 +7,7 @@
 import Foundation
 import Hummingbird
 import NIOCore
-import A2ACore
+import A2AClient
 
 extension A2ADispatcher {
     func jsonrpcDispatch<Context: RequestContext>(

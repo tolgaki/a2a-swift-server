@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// In-memory, actor-isolated `TaskStore`. Suitable for examples, tests,
 /// and single-process deployments. Not persistent across restarts.

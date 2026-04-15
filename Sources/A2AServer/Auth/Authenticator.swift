@@ -2,7 +2,7 @@
 // A2AServer
 
 import Foundation
-import A2ACore
+import A2AClient
 
 /// Server-side counterpart to `AuthenticationProvider`.
 ///
