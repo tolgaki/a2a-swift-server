@@ -2,6 +2,9 @@
 // A2AServer
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import A2AClient
 
 /// Delivers task update events to registered push-notification webhooks.

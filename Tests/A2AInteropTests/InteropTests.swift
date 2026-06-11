@@ -6,7 +6,9 @@
 
 import XCTest
 import Foundation
-import A2AClient
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import A2AClient
 import A2AServer
 

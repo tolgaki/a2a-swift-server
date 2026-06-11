@@ -149,6 +149,17 @@ extension A2ADispatcher {
             }
         } catch let error as A2AError {
             return try jsonrpcError(id: rpcID, error: error.toJSONRPCError())
+        } catch let error as DecodingError {
+            // Params that fail to decode are an InvalidParams (-32602)
+            // condition per JSON-RPC 2.0, not an internal server error.
+            return try jsonrpcError(
+                id: rpcID,
+                error: JSONRPCErrorBody(
+                    code: JSONRPCErrorCode.invalidParams.rawValue,
+                    message: "Invalid params: \(Self.describe(error))",
+                    data: nil
+                )
+            )
         } catch {
             return try jsonrpcError(
                 id: rpcID,
@@ -163,9 +174,33 @@ extension A2ADispatcher {
 
     private func requireParams<T>(_ params: T?) throws -> T {
         guard let params = params else {
-            throw A2AError.invalidRequest(message: "Missing required params")
+            throw A2AError.jsonRPCError(
+                code: JSONRPCErrorCode.invalidParams.rawValue,
+                message: "Missing required params",
+                data: nil
+            )
         }
         return params
+    }
+
+    /// Compact, single-line summary of a decoding failure for error messages.
+    private static func describe(_ error: DecodingError) -> String {
+        func path(_ context: DecodingError.Context) -> String {
+            let joined = context.codingPath.map(\.stringValue).joined(separator: ".")
+            return joined.isEmpty ? "params" : joined
+        }
+        switch error {
+        case .keyNotFound(let key, let context):
+            return "missing field '\(key.stringValue)' at \(path(context))"
+        case .typeMismatch(_, let context):
+            return "type mismatch at \(path(context))"
+        case .valueNotFound(_, let context):
+            return "null value at \(path(context))"
+        case .dataCorrupted(let context):
+            return "malformed value at \(path(context))"
+        @unknown default:
+            return "undecodable params"
+        }
     }
 
     private func jsonrpcSuccess<T: Encodable>(

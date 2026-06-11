@@ -12,14 +12,16 @@ let package = Package(
         .library(name: "A2AServer", targets: ["A2AServer"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/tolgaki/a2a-client-swift.git", from: "1.0.22"),
+        // TODO: switch to `from: "1.0.23"` once the v1.0 wire-format and
+        // Linux (FoundationNetworking) fixes are tagged in a2a-swift-client.
+        .package(url: "https://github.com/tolgaki/a2a-swift-client.git", branch: "claude/github-discussion-1931-fixes-46o8tz"),
         .package(url: "https://github.com/hummingbird-project/hummingbird.git", from: "2.5.0"),
     ],
     targets: [
         .target(
             name: "A2AServer",
             dependencies: [
-                .product(name: "A2AClient", package: "a2a-client-swift"),
+                .product(name: "A2AClient", package: "a2a-swift-client"),
                 .product(name: "Hummingbird", package: "hummingbird"),
             ],
             path: "Sources/A2AServer"
@@ -28,7 +30,7 @@ let package = Package(
             name: "A2AInteropTests",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2AClient", package: "a2a-client-swift"),
+                .product(name: "A2AClient", package: "a2a-swift-client"),
             ],
             path: "Tests/A2AInteropTests"
         ),
@@ -54,7 +56,7 @@ let package = Package(
             name: "PushNotificationsAgent",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2AClient", package: "a2a-client-swift"),
+                .product(name: "A2AClient", package: "a2a-swift-client"),
             ],
             path: "Examples/PushNotificationsAgent"
         ),
@@ -62,7 +64,7 @@ let package = Package(
             name: "MultiAgent",
             dependencies: [
                 "A2AServer",
-                .product(name: "A2AClient", package: "a2a-client-swift"),
+                .product(name: "A2AClient", package: "a2a-swift-client"),
             ],
             path: "Examples/MultiAgent"
         ),
