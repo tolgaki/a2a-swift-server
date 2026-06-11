@@ -61,7 +61,7 @@ public final class A2ADispatcher: @unchecked Sendable {
         // subsequent getTask/listTasks/cancelTask operations can find it.
         if case .task(let task) = response {
             await taskStore.insert(task)
-            scheduleAutoCompleteIfConfigured(task: task)
+            await scheduleAutoCompleteIfConfigured(task: task)
         }
         return response
     }
@@ -148,6 +148,10 @@ public final class A2ADispatcher: @unchecked Sendable {
         try await handler.onTaskCancelled(id: id, auth: auth)
 
         let updated = await taskStore.update(id: id) { task in
+            // Re-checked inside the store's isolation: the task may have
+            // reached a terminal state (e.g. auto-complete fired) since the
+            // check above.
+            guard !task.status.state.isTerminal else { return }
             task = A2ATask(
                 id: task.id,
                 contextId: task.contextId,
@@ -163,6 +167,13 @@ public final class A2ADispatcher: @unchecked Sendable {
         }
         guard let updated = updated else {
             throw A2AError.taskNotFound(taskId: id, message: nil)
+        }
+        guard updated.status.state == .cancelled else {
+            throw A2AError.taskNotCancelable(
+                taskId: id,
+                state: updated.status.state,
+                message: "Task \(id) reached terminal state \(updated.status.state.rawValue) before it could be cancelled"
+            )
         }
         return updated
     }
@@ -267,7 +278,7 @@ public final class A2ADispatcher: @unchecked Sendable {
 
     // MARK: - Helpers
 
-    private func scheduleAutoCompleteIfConfigured(task: A2ATask) {
+    private func scheduleAutoCompleteIfConfigured(task: A2ATask) async {
         guard let delay = handler.autoCompleteDelay else { return }
         let taskID = task.id
         let store = taskStore
@@ -277,6 +288,9 @@ public final class A2ADispatcher: @unchecked Sendable {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             let updated = await store.update(id: taskID) { task in
+                // Don't resurrect tasks that reached a terminal state (e.g.
+                // were cancelled) between scheduling and the deadline.
+                guard !task.status.state.isTerminal else { return }
                 task = A2ATask(
                     id: task.id,
                     contextId: task.contextId,
@@ -289,14 +303,15 @@ public final class A2ADispatcher: @unchecked Sendable {
                     metadata: task.metadata
                 )
             }
-            if let updated = updated {
+            if let updated = updated, updated.status.state == .completed {
                 await dispatcher.dispatch(taskID: taskID, event: .task(updated))
             }
             await registry.remove(taskID: taskID)
         }
-        Task {
-            await registry.register(taskID: taskID, task: bg)
-        }
+        // Register before returning the response: a client may send
+        // CancelTask the moment it sees the task id, and the handle must
+        // already be in the registry by then.
+        await registry.register(taskID: taskID, task: bg)
     }
 }
 

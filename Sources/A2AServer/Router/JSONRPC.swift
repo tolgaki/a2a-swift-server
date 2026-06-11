@@ -39,6 +39,25 @@ struct JSONRPCErrorResponse: Encodable {
     let jsonrpc: String = "2.0"
     let id: JSONRPCIdentifier?
     let error: JSONRPCErrorBody
+
+    private enum CodingKeys: String, CodingKey {
+        case jsonrpc
+        case id
+        case error
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(jsonrpc, forKey: .jsonrpc)
+        // Spec: when the id cannot be determined (parse error, invalid
+        // request), it MUST be null — not omitted.
+        if let id = id {
+            try container.encode(id, forKey: .id)
+        } else {
+            try container.encodeNil(forKey: .id)
+        }
+        try container.encode(error, forKey: .error)
+    }
 }
 
 /// JSON-RPC error body.

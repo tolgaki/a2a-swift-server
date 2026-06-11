@@ -240,4 +240,98 @@ final class InteropTests: XCTestCase {
             // expected
         }
     }
+
+    // MARK: - Streaming error paths
+
+    // Pre-stream failure: the server rejects the request before any SSE
+    // bytes flow (JSON-RPC answers HTTP 200 + application/json; REST answers
+    // 404 with an AIP-193 body). The client must surface the typed error,
+    // not end an empty stream.
+
+    func testSubscribeToUnknownTask_SurfacesError_JSONRPC() async throws {
+        let client = rpcClient()
+        do {
+            let stream = try await client.subscribeToTask("nonexistent-task")
+            for try await _ in stream {}
+            XCTFail("Expected taskNotFound error")
+        } catch A2AError.taskNotFound {
+            // expected
+        }
+    }
+
+    func testSubscribeToUnknownTask_SurfacesError_REST() async throws {
+        let client = restClient()
+        do {
+            let stream = try await client.subscribeToTask("nonexistent-task")
+            for try await _ in stream {}
+            XCTFail("Expected taskNotFound error")
+        } catch A2AError.taskNotFound {
+            // expected
+        }
+    }
+
+    // Mid-stream failure: the SSE response has already started when the
+    // handler's stream throws. The server must emit a terminal error frame
+    // and the client must throw it from the async sequence.
+
+    func testStreamingUnsupported_SurfacesError_JSONRPC() async throws {
+        let noStreamHarness = ServerHarness()
+        let url = try await noStreamHarness.start(handler: NoStreamingHandler())
+        var caught: A2AError?
+        do {
+            let client = A2AClient(configuration: A2AClientConfiguration(
+                baseURL: url, transportBinding: .jsonRPC, protocolVersion: "1.0"
+            ))
+            let stream = try await client.sendStreamingMessage("hello")
+            for try await _ in stream {}
+        } catch let error as A2AError {
+            caught = error
+        } catch {
+            // fall through to the assertion below
+        }
+        await noStreamHarness.stop()
+        guard case .unsupportedOperation = caught else {
+            XCTFail("Expected unsupportedOperation, got \(String(describing: caught))")
+            return
+        }
+    }
+
+    func testStreamingUnsupported_SurfacesError_REST() async throws {
+        let noStreamHarness = ServerHarness()
+        let url = try await noStreamHarness.start(handler: NoStreamingHandler())
+        var caught: A2AError?
+        do {
+            let client = A2AClient(configuration: A2AClientConfiguration(
+                baseURL: url, transportBinding: .httpREST, protocolVersion: "1.0"
+            ))
+            let stream = try await client.sendStreamingMessage("hello")
+            for try await _ in stream {}
+        } catch let error as A2AError {
+            caught = error
+        } catch {
+            // fall through to the assertion below
+        }
+        await noStreamHarness.stop()
+        guard case .unsupportedOperation = caught else {
+            XCTFail("Expected unsupportedOperation, got \(String(describing: caught))")
+            return
+        }
+    }
+
+    // Cancelling twice must fail the second time with taskNotCancelable —
+    // a cancelled task can never be resurrected.
+
+    func testCancelTask_Twice_JSONRPC() async throws {
+        let client = rpcClient()
+        let create = try await client.sendMessage("open a task")
+        let created = try XCTUnwrap(create.task)
+        let cancelled = try await client.cancelTask(created.id)
+        XCTAssertEqual(cancelled.status.state, .cancelled)
+        do {
+            _ = try await client.cancelTask(created.id)
+            XCTFail("Expected taskNotCancelable error")
+        } catch A2AError.taskNotCancelable {
+            // expected
+        }
+    }
 }

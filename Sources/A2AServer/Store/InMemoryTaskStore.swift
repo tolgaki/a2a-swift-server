@@ -64,7 +64,9 @@ public actor InMemoryTaskStore: TaskStore {
         // Drop history/artifacts if the caller didn't ask for them.
         let trimmedTasks: [A2ATask] = page.map { task in
             let historyLength = query.historyLength
-            let includeArtifacts = query.includeArtifacts ?? true
+            // Schema default is false: artifacts are only included when
+            // explicitly requested.
+            let includeArtifacts = query.includeArtifacts ?? false
             var history = task.history
             if let len = historyLength {
                 if len == 0 {

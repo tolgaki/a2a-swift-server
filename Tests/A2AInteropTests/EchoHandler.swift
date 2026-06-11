@@ -7,6 +7,30 @@ import Foundation
 import A2AClient
 import A2AServer
 
+/// Handler without streaming support — relies on the framework default,
+/// which fails the stream with `unsupportedOperation`. Used to verify
+/// streaming errors reach the client instead of silently ending the stream.
+struct NoStreamingHandler: A2AHandler {
+    func handleMessage(
+        _ message: Message,
+        auth: AuthContext?
+    ) async throws -> SendMessageResponse {
+        .message(.agent("echo: \(message.textContent)"))
+    }
+
+    func agentCard(baseURL: String) -> AgentCard {
+        AgentCard(
+            name: "NoStreaming",
+            description: "Test handler without streaming support.",
+            supportedInterfaces: [
+                AgentInterface(url: baseURL, protocolBinding: AgentInterface.httpJSON, protocolVersion: "1.0"),
+                AgentInterface(url: baseURL, protocolBinding: AgentInterface.jsonRPC, protocolVersion: "1.0"),
+            ],
+            version: "1.0"
+        )
+    }
+}
+
 struct EchoHandler: A2AHandler {
     func handleMessage(
         _ message: Message,
