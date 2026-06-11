@@ -55,11 +55,16 @@ public actor WebhookDispatcher {
         let configs = await store.configs(forTask: taskID)
         guard !configs.isEmpty else { return }
 
+        // The payload is identical for every webhook — encode it once.
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        guard let body = try? encoder.encode(event) else { return }
+
         await withTaskGroup(of: Void.self) { group in
             for config in configs {
                 group.addTask { [weak self] in
                     guard let self = self else { return }
-                    await self.deliver(config: config, event: event)
+                    await self.deliver(config: config, body: body)
                 }
             }
         }
@@ -69,13 +74,9 @@ public actor WebhookDispatcher {
 
     private func deliver(
         config: PushNotificationConfig,
-        event: StreamResponse
+        body: Data
     ) async {
         guard let url = URL(string: config.url) else { return }
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        guard let body = try? encoder.encode(event) else { return }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"

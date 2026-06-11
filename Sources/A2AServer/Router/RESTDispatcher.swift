@@ -137,11 +137,14 @@ extension A2ADispatcher {
             // Accept both wire shapes:
             //   {"url":"...","token":"..."}                              (flat)
             //   {"taskId":"...","config":{"url":"...","token":"..."}}    (wrapped, matches the client)
+            // The request body can only be consumed once, so collect it
+            // first and try both decodes against the same bytes.
+            let data = try await collectBody(req: req)
             let config: PushNotificationConfig
-            if let wrapped = try? await decodeBody(req: req) as CreatePushConfigParams {
+            if let wrapped = try? Self.bodyDecoder().decode(CreatePushConfigParams.self, from: data) {
                 config = wrapped.config
             } else {
-                config = try await decodeBody(req: req)
+                config = try Self.bodyDecoder().decode(PushNotificationConfig.self, from: data)
             }
 
             let result = try await createPushNotificationConfig(taskID: taskID, config: config, auth: auth)
@@ -233,7 +236,9 @@ extension A2ADispatcher {
         let q = req.uri.queryParameters
         let contextId = q.get("contextId").flatMap { String($0) }
         let statusStr = q.get("status").flatMap { String($0) }
-        let status = statusStr.flatMap { TaskState(rawValue: $0) }
+        // TaskState(string:) accepts both v1.0 (TASK_STATE_COMPLETED) and
+        // v0.3 ("completed") spellings.
+        let status = statusStr.flatMap { TaskState(string: $0) }
         let pageSize = q.get("pageSize").flatMap { Int(String($0)) }
         let pageToken = q.get("pageToken").flatMap { String($0) }
         let historyLength = q.get("historyLength").flatMap { Int(String($0)) }
@@ -253,12 +258,20 @@ extension A2ADispatcher {
         )
     }
 
-    func decodeBody<T: Decodable>(req: Request) async throws -> T {
+    func collectBody(req: Request) async throws -> Data {
         let buffer = try await req.body.collect(upTo: 10 * 1024 * 1024)  // 10 MB cap
-        let data = Data(buffer: buffer)
+        return Data(buffer: buffer)
+    }
+
+    static func bodyDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(T.self, from: data)
+        return decoder
+    }
+
+    func decodeBody<T: Decodable>(req: Request) async throws -> T {
+        let data = try await collectBody(req: req)
+        return try Self.bodyDecoder().decode(T.self, from: data)
     }
 
     func jsonResponse<T: Encodable>(_ value: T, status: HTTPResponse.Status) throws -> Response {
@@ -360,19 +373,22 @@ extension A2ADispatcher {
                 }
                 try await writer.finish(nil)
             } catch {
-                // Emit a JSON-RPC error frame (or bare error) then terminate.
-                if let a2aError = error as? A2AError {
-                    if wrappedInJSONRPC {
-                        let body = JSONRPCErrorResponse(
-                            id: rpcID,
-                            error: a2aError.toJSONRPCError()
-                        )
-                        let enc = JSONEncoder()
-                        if let data = try? enc.encode(body) {
-                            let frame = "data: \(String(data: data, encoding: .utf8) ?? "")\n\n"
-                            try? await writer.write(ByteBuffer(bytes: Data(frame.utf8)))
-                        }
-                    }
+                // Emit a terminal error frame so clients see the failure
+                // instead of a silently truncated stream, then terminate.
+                let rpcError = (error as? A2AError ?? .internalError(message: error.localizedDescription))
+                    .toJSONRPCError()
+                let enc = JSONEncoder()
+                let frameData: Data?
+                if wrappedInJSONRPC {
+                    frameData = try? enc.encode(JSONRPCErrorResponse(id: rpcID, error: rpcError))
+                } else {
+                    // Bare AIP-193 shape for the REST binding.
+                    frameData = try? enc.encode(RESTStreamErrorFrame(
+                        error: .init(code: rpcError.code, message: rpcError.message)
+                    ))
+                }
+                if let frameData, let json = String(data: frameData, encoding: .utf8) {
+                    try? await writer.write(ByteBuffer(bytes: Data("data: \(json)\n\n".utf8)))
                 }
                 try await writer.finish(nil)
             }
@@ -394,6 +410,16 @@ extension Request {
 }
 
 // MARK: - Body helper types
+
+/// AIP-193-shaped error frame emitted as the terminal SSE event when a
+/// REST (non-JSON-RPC) stream fails.
+struct RESTStreamErrorFrame: Encodable {
+    struct Body: Encodable {
+        let code: Int
+        let message: String
+    }
+    let error: Body
+}
 
 struct CancelTaskBody: Decodable {
     let metadata: [String: AnyCodable]?

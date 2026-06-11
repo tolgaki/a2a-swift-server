@@ -30,22 +30,23 @@ public actor InMemoryTaskStore: TaskStore {
     }
 
     public func list(_ query: TaskQueryParams) async -> TaskListResponse {
-        var filtered = Array(tasks.values)
+        // One shared formatter for the whole pass — creating an
+        // ISO8601DateFormatter per task is needlessly expensive.
+        let formatter = query.statusTimestampAfter != nil ? ISO8601DateFormatter() : nil
 
-        if let contextId = query.contextId {
-            filtered = filtered.filter { $0.contextId == contextId }
-        }
-        if let status = query.status {
-            filtered = filtered.filter { $0.status.state == status }
-        }
-        if let after = query.statusTimestampAfter,
-           let fmt = ISO8601DateFormatter() as ISO8601DateFormatter? {
-            let _ = fmt
-            filtered = filtered.filter { task in
-                guard let ts = task.status.timestamp,
-                      let taskDate = ISO8601DateFormatter().date(from: ts) else { return false }
-                return taskDate > after
+        var filtered = tasks.values.filter { task in
+            if let contextId = query.contextId, task.contextId != contextId {
+                return false
             }
+            if let status = query.status, task.status.state != status {
+                return false
+            }
+            if let after = query.statusTimestampAfter {
+                guard let ts = task.status.timestamp,
+                      let taskDate = formatter?.date(from: ts),
+                      taskDate > after else { return false }
+            }
+            return true
         }
 
         // Deterministic ordering for reproducible tests.

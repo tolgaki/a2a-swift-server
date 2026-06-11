@@ -21,6 +21,12 @@ struct JSONRPCMethodOnly: Decodable {
     let method: String
 }
 
+/// Most lenient envelope: salvages the request id from bodies that are
+/// valid JSON but not valid Request objects, so error responses can echo it.
+struct JSONRPCIDOnly: Decodable {
+    let id: JSONRPCIdentifier?
+}
+
 /// JSON-RPC 2.0 success response envelope.
 struct JSONRPCSuccessResponse<Result: Encodable>: Encodable {
     let jsonrpc: String = "2.0"

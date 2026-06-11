@@ -25,6 +25,21 @@ extension A2ADispatcher {
         do {
             methodOnly = try decoder.decode(JSONRPCMethodOnly.self, from: data)
         } catch {
+            // Per JSON-RPC 2.0, ParseError (-32700) is reserved for JSON the
+            // server cannot parse at all. JSON that parses but is not a
+            // valid Request object (missing method/jsonrpc) is
+            // InvalidRequest (-32600), echoing the id when one is present.
+            if (try? JSONSerialization.jsonObject(with: data)) != nil {
+                let id = (try? decoder.decode(JSONRPCIDOnly.self, from: data))?.id
+                return try jsonrpcError(
+                    id: id,
+                    error: JSONRPCErrorBody(
+                        code: JSONRPCErrorCode.invalidRequest.rawValue,
+                        message: "Invalid request: not a valid JSON-RPC 2.0 request object",
+                        data: nil
+                    )
+                )
+            }
             return try jsonrpcError(
                 id: nil,
                 error: JSONRPCErrorBody(
